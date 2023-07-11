@@ -1,0 +1,36 @@
+{
+  "name": "custom-processor-examples",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:chain-io/custom-processor-examples.git",
+  "author": "Charles Shopsin <cshopsin@chain.io>",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "standard": "^17.1.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "modulePaths": [
+      "<rootDir>/"
+    ],
+    "restoreMocks": true,
+    "clearMocks": true
+  },
+  "scripts": {
+    "test": "jest --watch"
+  },
+  "standard": {
+    "envs": [
+      "jest"
+    ]
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.8",
+    "lodash": "^4.17.21",
+    "luxon": "^3.3.0",
+    "uuid": "^9.0.0",
+    "vm2": "^3.9.19",
+    "xpath": "^0.0.32"
+  }
+}

@@ -1,0 +1,16 @@
+<events>
+  <master_bill>MBOL500</master_bill>
+  <event>
+    <!-- time in epoch seconds -->
+    <actual>1542674993</actual>
+    <code>Arrival</code>
+  </event>
+  <event>
+    <actual>1542674000</actual>
+    <code>Departure</code>
+  </event>
+  <event>
+    <actual>1542673000</actual>
+    <code>Loaded</code>
+  </event>
+</events>

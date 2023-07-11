@@ -1,0 +1,15 @@
+{
+  "doc_type": "event_json",
+  "events": [
+    {
+      "actual_date": "2018-11-20T00:49:53.000Z",
+      "event_code": "Arrival",
+      "master_bill": "MBOL123"
+    },
+    {
+      "actual_date": "2018-11-20T00:33:20.000Z",
+      "event_code": "Departure",
+      "master_bill": "MBOL123"
+    }
+  ]
+}
