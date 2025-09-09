@@ -120,6 +120,73 @@ Your custom processors have access to these powerful tools:
 - `destinationFiles` (post-processors): Array of processed files
 - `userLog`: For logging messages (`userLog.info()`, `userLog.warning()`, `userLog.error()`)
 
+### File Object Structure
+
+Every file in Chain.io custom processors is represented as a JavaScript object with the following properties:
+
+```javascript
+{
+  uuid: "550e8400-e29b-41d4-a716-446655440000",    // Unique identifier for the file
+  type: "file",                                    // Always "file" for file objects
+  file_name: "example.json",                       // Original filename with extension
+  format: "json",                                  // File format (json, csv, xml, etc.)
+  mime_type: "application/json",                   // MIME type of the file
+  body: "{ \"key\": \"value\" }"                   // File content as string
+}
+```
+
+#### Required Properties
+- **`body`** (string): The actual file content. Always a string regardless of original format
+- **`file_name`** (string): The filename including extension (e.g., "orders.json", "data.csv")
+- **`type`** (string): Always set to "file"
+
+#### Optional Properties
+- **`uuid`** (string): Unique identifier. Generate with `uuid()` when creating new files
+- **`format`** (string): File format identifier (json, csv, xml, xlsx, etc.)
+- **`mime_type`** (string): Standard MIME type (application/json, text/csv, text/xml, etc.)
+
+#### Important Notes About File Content
+
+**Binary Files (Excel, Images, etc.)**
+```javascript
+// Excel files come as base64-encoded strings
+const workbook = XLSX.read(file.body, { type: 'base64' })
+```
+
+**Text Files (JSON, CSV, XML)**
+```javascript
+// Text files are plain strings
+const data = JSON.parse(file.body)  // For JSON
+const lines = file.body.split('\n') // For CSV
+```
+
+#### Creating New File Objects
+
+When creating new files in your processor, use this structure:
+
+```javascript
+const newFile = {
+  uuid: uuid(),                    // Generate unique ID
+  type: 'file',                   // Always "file"
+  file_name: 'output.json',       // Set appropriate filename
+  format: 'json',                 // Set format
+  mime_type: 'application/json',  // Set MIME type
+  body: JSON.stringify(data)      // Convert data to string
+}
+```
+
+#### Modifying Existing Files
+
+When modifying files, preserve the original structure:
+
+```javascript
+const modifiedFile = {
+  ...originalFile,                // Keep all original properties
+  body: newContent,              // Update only the content
+  file_name: newFileName         // Optionally update filename
+}
+```
+
 ### Built-in Libraries
 - [`lodash`](https://lodash.com/) (v4.17.21): Utility functions for arrays and objects
 - [`DateTime`](https://moment.github.io/luxon/) (Luxon v3.3.0): Date and time manipulation
