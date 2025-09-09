@@ -10,6 +10,7 @@ This repository contains:
 - **Best practices** - Proven patterns from the Chain.io community
 
 ### Example Files in This Repository
+- [`alphabetically_sort_xml.js`](example_scripts/alphabetically_sort_xml.js) - Sort XML elements alphabetically to support testing
 - [`excel_to_csv.js`](example_scripts/excel_to_csv.js) - Convert Excel files to CSV format
 - [`filter_shipments_with_update_or_delete_action_type.js`](example_scripts/filter_shipments_with_update_or_delete_action_type.js) - Filter shipments by action type
 - [`overwrite_output_field_with_mapping.js`](example_scripts/overwrite_output_field_with_mapping.js) - Map field values using lookup tables
