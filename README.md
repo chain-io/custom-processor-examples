@@ -11,6 +11,7 @@ This repository contains:
 
 ### Example Files in This Repository
 - [`alphabetically_sort_xml.js`](example_scripts/alphabetically_sort_xml.js) - Sort XML elements alphabetically to support testing
+- [`array_to_files.js`](example_scripts/array_to_files.js) - Split a file that is an array of objects into separate files. Helpful when using a jsonata mapping to create multiple files from one source.
 - [`excel_to_csv.js`](example_scripts/excel_to_csv.js) - Convert Excel files to CSV format
 - [`filter_shipments_with_update_or_delete_action_type.js`](example_scripts/filter_shipments_with_update_or_delete_action_type.js) - Filter shipments by action type
 - [`overwrite_output_field_with_mapping.js`](example_scripts/overwrite_output_field_with_mapping.js) - Map field values using lookup tables
