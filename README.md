@@ -556,6 +556,8 @@ const processedFiles = sourceFiles.map(file => {
 returnSuccess(processedFiles)
 ```
 
+**Note:** Data tag labels and values are automatically truncated to 255 characters each to ensure compatibility with the Chain.io platform. If your data contains labels or values longer than 255 characters, they will be truncated when published.
+
 ### Conditional Flow Control
 
 ```javascript
