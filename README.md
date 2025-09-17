@@ -556,7 +556,8 @@ const processedFiles = sourceFiles.map(file => {
 returnSuccess(processedFiles)
 ```
 
-**Note:** Data tag labels and values are automatically truncated to 255 characters each to ensure compatibility with the Chain.io platform. If your data contains labels or values longer than 255 characters, they will be truncated when published.
+**Note:** Data tag labels and values are automatically truncated to 255 bytes each to ensure compatibility with the Chain.io platform. If your data contains labels or values longer than 255 bytes, they will be truncated when published. (A unicode character is 1-4 bytes. If you need to see how many bytes a particular string is, there are online tools available. Here is an example: [UTF-8 String Length & Byte Counter
+](http://folge.me/tools/utf8-bytes-counter) )
 
 ### Conditional Flow Control
 
