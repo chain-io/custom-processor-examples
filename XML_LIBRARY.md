@@ -436,7 +436,7 @@ const processXmlFile = (file) => {
   try {
     // Validate expected structure
     const rootElement = document.rootElement()
-    if (!rootElement || rootElement.localName !== 'orders') {
+    if (!rootElement || rootElement.localName() !== 'orders') {
       userLog.warning(`Unexpected XML structure in ${file.file_name}, expected <orders> root`)
       return null
     }
