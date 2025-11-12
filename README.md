@@ -8,6 +8,8 @@ This repository contains:
 - **Real-world examples** - Production-ready custom processors (see `.js` files in this repo)
 - **Complete documentation** - Everything you need to get started
 - **Best practices** - Proven patterns from the Chain.io community
+- **[EXECUTION_SEARCH.md](EXECUTION_SEARCH.md)** - Detailed guide for the `executionSearchByPartner()` function
+- **[XML_LIBRARY.md](XML_LIBRARY.md)** - XML parsing and manipulation reference
 
 ### Example Files in This Repository
 - [`alphabetically_sort_xml.js`](example_scripts/alphabetically_sort_xml.js) - Sort XML elements alphabetically to support testing
@@ -17,6 +19,7 @@ This repository contains:
 - [`error_edi_810_cancel_files.js`](example_scripts/error_edi_810_cancel_files.js) - Handle EDI cancellation files
 - [`nonstandard_edi_value_replace.js`](example_scripts/nonstandard_edi_value_replace.js) - Replace non-standard EDI values
 - [`port_of_discharge_to_port_of_destination.js`](example_scripts/port_of_discharge_to_port_of_destination.js) - Port mapping logic
+- [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByPartner
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -28,6 +31,10 @@ This repository contains:
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 - [Advanced Examples](#advanced-examples)
+- [Using Async Operations](#using-async-operations)
+- [File Compatibility](#file-compatibility)
+- [Limitations to Remember](#limitations-to-remember)
+- [Getting Help](#getting-help)
 - [Contributing](#contributing)
 
 ## Quick Start
@@ -199,6 +206,49 @@ const modifiedFile = {
 - `returnSuccess(files)`: Process completed successfully
 - `returnError(files)`: Process failed with error
 - `returnSkipped(files)`: Skip this execution
+
+### Advanced Functions
+
+#### `executionSearchByPartner(partnerUUID, args)`
+
+Search for flow execution records by trading partner. This function provides programmatic access to the same execution data you see in the **Flow Execution Search screen** in the Chain.io portal.
+
+**Quick Example:**
+```javascript
+(async () => {
+  // Search for recent executions from a partner
+  const results = await executionSearchByPartner('partner-uuid-here', {
+    startDateAfter: '2024-01-01T00:00:00Z',
+    dataTag: 'ORDER_BATCH_123'
+  })
+  
+  userLog.info(`Found ${results.data.length} executions`)
+  
+  // Use the results in your processing
+  const processedFiles = sourceFiles.map(file => {
+    // Your logic here
+    return file
+  })
+  
+  return returnSuccess(processedFiles)
+})()
+```
+
+**Key Points:**
+- ⚠️ **Requires async wrapper**: Must wrap entire script in `(async () => { ... })()`
+- ⚠️ **Rate limited**: Maximum 10 searches per execution
+- ⚠️ **Returns Promise**: Use `await` and `return returnSuccess()`
+- 📖 **[Complete Documentation](EXECUTION_SEARCH.md)**: See detailed guide for all parameters, options, and use cases
+
+**Common Use Cases:**
+- Check for duplicate processing
+- Enrich data with execution history
+- Track batch processing status
+- Analyze execution patterns
+
+> 💡 **See also**: 
+> - [EXECUTION_SEARCH.md](EXECUTION_SEARCH.md) - Complete documentation with all parameters and examples
+> - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Working code example
 
 ## Common Use Cases with Examples
 
@@ -588,6 +638,88 @@ if (processedFiles.length === 0) {
 }
 ```
 
+## Using Async Operations
+
+Custom processors support asynchronous operations, but they require a specific wrapper pattern.
+
+### When You Need Async
+
+You need to use the async wrapper when:
+- Using `executionSearchByPartner()` to search for previous executions
+- Using `await` with any Promise-based operation
+- Calling any function that returns a Promise
+
+### The Async Wrapper Pattern
+
+**❌ This will NOT work:**
+```javascript
+// Without async wrapper - will cause errors
+const results = await executionSearchByPartner('partner-uuid')
+returnSuccess(sourceFiles)
+```
+
+**✅ This WILL work:**
+```javascript
+// With async wrapper - correct pattern
+(async () => {
+  const results = await executionSearchByPartner('partner-uuid')
+  return returnSuccess(sourceFiles)  // Note: use "return"
+})()
+```
+
+### Key Rules for Async Code
+
+1. **Wrap everything** in `(async () => { ... })()`
+2. **Use `return`** before your `returnSuccess()`, `returnError()`, or `returnSkipped()` calls
+3. **Keep it simple** - the wrapper goes around your entire script
+4. **Remember the timeout** - all async operations must complete within the 60 second total runtime alloted to custom processors
+
+### Complete Async Example
+
+```javascript
+(async () => {
+  // You can now use await anywhere in your code
+  const results = await executionSearchByPartner('partner-uuid-here', {
+    startDateAfter: '2024-01-01T00:00:00Z'
+  })
+  
+  userLog.info(`Found ${results.data.length} previous executions`)
+  
+  // Process your files normally
+  const processedFiles = sourceFiles.map(file => {
+    const data = JSON.parse(file.body)
+    
+    // Use the search results to enrich your data
+    data.previousExecutionCount = results.data.length
+    
+    return {
+      ...file,
+      body: JSON.stringify(data)
+    }
+  })
+  
+  // Don't forget to use "return" before returnSuccess
+  return returnSuccess(processedFiles)
+})()
+```
+
+### Async with Conditional Logic
+
+```javascript
+(async () => {
+  // Search for previous executions
+  const results = await executionSearchByPartner('partner-uuid')
+  
+  // Use conditional logic as normal
+  if (results.data.length === 0) {
+    userLog.warning('No previous executions found')
+    return returnSkipped([])
+  }
+  
+  return returnSuccess(processedFiles)
+})()
+```
+
 ## File Compatibility
 
 ### Supported Formats
@@ -603,11 +735,11 @@ if (processedFiles.length === 0) {
 
 ## Limitations to Remember
 
-- **No async operations**: No `async/await`, `Promise`, `setTimeout`
-- **No external libraries**: Cannot `require()` or `import` additional packages
-- **60-second timeout**: Keep processing efficient
+- **No external libraries**: Cannot `require()` or `import` additional packages beyond the built-in libraries listed above
+- **60-second timeout**: Total execution time (including any async operations) must complete within 60 seconds
 - **10,000 character limit**: Per processor (pre and post can each be 10,000 characters)
 - **No Symbol object access**: Security restriction
+- **Async operations require wrapper**: If using `await` or async functions like `executionSearchByPartner`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
 
 ## Getting Help
 
@@ -620,13 +752,19 @@ if (processedFiles.length === 0) {
 ### Common Questions
 
 **Q: Can I call external APIs?**
-A: No, custom processors run in a sandboxed environment without external network access.
+A: No, custom processors run in a sandboxed environment without external network access. However, you can use `executionSearchByPartner()` to search for previous execution data within Chain.io.
+
+**Q: How do I use async/await in my processor?**
+A: Wrap your entire script in `(async () => { ... })()` and use `return` before your `returnSuccess()`, `returnError()`, or `returnSkipped()` calls. See the "Advanced Functions" section above for complete examples.
+
+**Q: Why do I get "await is only valid in async function" error?**
+A: You need to wrap your entire script in the async wrapper: `(async () => { /* your code here */ })()`. Don't forget to add `return` before your return function calls.
 
 **Q: How do I handle large files?**
 A: Process data in chunks and use efficient algorithms. Consider splitting large files before processing.
 
 **Q: Can I save state between executions?**
-A: No, each execution is independent.
+A: No, each execution is independent. However, you can use `executionSearchByPartner()` to look up data from previous executions.
 
 **Q: What happens if my code has errors?**
 A: The flow will fail with an error status, and details will appear in the execution logs.
