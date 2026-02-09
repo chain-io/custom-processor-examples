@@ -138,12 +138,12 @@ Every file in Chain.io custom processors is represented as a JavaScript object w
   file_name: "example.json",                       // Original filename with extension
   format: "json",                                  // File format (json, csv, xml, etc.)
   mime_type: "application/json",                   // MIME type of the file
-  body: "{ \"key\": \"value\" }"                   // File content as string
+  body: "{ \"key\": \"value\" }"                   // File content as string, object or array of plain objects
 }
 ```
 
 #### Required Properties
-- **`body`** (string): The actual file content. Always a string regardless of original format
+- **`body`** (string): The actual file content. Always a string, array, or object
 - **`file_name`** (string): The filename including extension (e.g., "orders.json", "data.csv")
 - **`type`** (string): Always set to "file"
 - **`uuid`** (string): Unique identifier. Generate with `uuid()` when creating new files
