@@ -20,6 +20,7 @@ This repository contains:
 - [`nonstandard_edi_value_replace.js`](example_scripts/nonstandard_edi_value_replace.js) - Replace non-standard EDI values
 - [`port_of_discharge_to_port_of_destination.js`](example_scripts/port_of_discharge_to_port_of_destination.js) - Port mapping logic
 - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByPartner
+- [`process_x12_997_files.js`](example_scripts/process_x12_997_files.js) - Parse and validate X12 997 EDI acknowledgment files
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -95,10 +96,10 @@ Here's a simple example that adds a timestamp to every record:
 const processedFiles = sourceFiles.map(file => {
   // Parse the JSON data
   const data = JSON.parse(file.body)
-  
+
   // Add timestamp
   data.processed_at = DateTime.now().toISO()
-  
+
   // Return the modified file
   return {
     ...file,
@@ -221,15 +222,15 @@ Search for flow execution records by trading partner. This function provides pro
     startDateAfter: '2024-01-01T00:00:00Z',
     dataTag: 'ORDER_BATCH_123'
   })
-  
+
   userLog.info(`Found ${results.data.length} executions`)
-  
+
   // Use the results in your processing
   const processedFiles = sourceFiles.map(file => {
     // Your logic here
     return file
   })
-  
+
   return returnSuccess(processedFiles)
 })()
 ```
@@ -246,7 +247,7 @@ Search for flow execution records by trading partner. This function provides pro
 - Track batch processing status
 - Analyze execution patterns
 
-> 💡 **See also**: 
+> 💡 **See also**:
 > - [EXECUTION_SEARCH.md](EXECUTION_SEARCH.md) - Complete documentation with all parameters and examples
 > - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Working code example
 
@@ -259,13 +260,13 @@ Search for flow execution records by trading partner. This function provides pro
 ```javascript
 const processedFiles = sourceFiles.map(file => {
   const orders = JSON.parse(file.body)
-  
+
   // Add total calculation to each order
   orders.forEach(order => {
     order.total = order.quantity * order.unit_price
     order.total_with_tax = order.total * 1.08 // 8% tax
   })
-  
+
   return {
     ...file,
     body: JSON.stringify(orders)
@@ -285,7 +286,7 @@ returnSuccess(processedFiles)
 ```javascript
 const processedFiles = sourceFiles.map(file => {
   const orders = JSON.parse(file.body)
-  
+
   // Filter orders above $100
   const validOrders = orders.filter(order => {
     const total = order.quantity * order.unit_price
@@ -295,7 +296,7 @@ const processedFiles = sourceFiles.map(file => {
     }
     return true
   })
-  
+
   return {
     ...file,
     body: JSON.stringify(validOrders)
@@ -315,18 +316,18 @@ const processedFiles = sourceFiles.map(file => {
   // Assuming CSV content in file.body
   const lines = file.body.split('\n')
   const headers = lines[0].split(',')
-  
+
   const jsonData = lines.slice(1).map(line => {
     const values = line.split(',')
     const record = {}
-    
+
     headers.forEach((header, index) => {
       record[header.trim()] = values[index]?.trim()
     })
-    
+
     return record
   })
-  
+
   return {
     ...file,
     body: JSON.stringify(jsonData),
@@ -348,21 +349,21 @@ returnSuccess(processedFiles)
 const processedFiles = sourceFiles.map(file => {
   // Skip non-Excel files (like the example in this repo)
   if (!file.file_name?.match(/\.xls[xbm]$/)) return null
-  
+
   // Parse Excel file - note: use 'base64' type for binary data
   const workbook = XLSX.read(file.body, { type: 'base64' })
   const sheetName = workbook.SheetNames[0]
   const worksheet = workbook.Sheets[sheetName]
-  
+
   // Convert to JSON
   const jsonData = XLSX.utils.sheet_to_json(worksheet)
-  
+
   // Add processing metadata
   jsonData.forEach(row => {
     row.source_sheet = sheetName
     row.processed_date = DateTime.now().toISODate()
   })
-  
+
   return {
     uuid: uuid(),
     type: 'file',
@@ -386,7 +387,7 @@ const processedFiles = sourceFiles.map(file => {
   try {
     // Parse XML
     const xmlDoc = xml.XmlParser.parseFromString(file.body)
-    
+
     // Extract order information
     const orders = xml.elements(xmlDoc, '//order').map(orderElement => ({
       id: xml.text(orderElement, 'id'),
@@ -394,7 +395,7 @@ const processedFiles = sourceFiles.map(file => {
       amount: parseFloat(xml.text(orderElement, 'amount')),
       date: xml.text(orderElement, 'date')
     }))
-    
+
     return {
       ...file,
       body: JSON.stringify(orders),
@@ -426,14 +427,14 @@ const customerLookup = {
 
 const processedFiles = sourceFiles.map(file => {
   const orders = JSON.parse(file.body)
-  
+
   // Enrich each order with customer data
   orders.forEach(order => {
     const customer = customerLookup[order.customer_id]
     if (customer) {
       order.customer_name = customer.name
       order.customer_tier = customer.tier
-      
+
       // Apply tier-based discount
       if (customer.tier === 'Premium') {
         order.discount_percent = 10
@@ -443,7 +444,7 @@ const processedFiles = sourceFiles.map(file => {
       userLog.warning(`Unknown customer ID: ${order.customer_id}`)
     }
   })
-  
+
   return {
     ...file,
     body: JSON.stringify(orders)
@@ -588,18 +589,18 @@ Data tags appear in the Flow Execution Screen for tracking and monitoring:
 // Process your data
 const processedFiles = sourceFiles.map(file => {
   const orders = JSON.parse(file.body)
-  
+
   // Calculate summary statistics
   const totalOrders = orders.length
   const totalValue = orders.reduce((sum, order) => sum + order.total, 0)
-  
+
   // Publish data tags for monitoring
   publishDataTags([
     { label: 'Total Orders', value: totalOrders.toString() },
     { label: 'Total Value', value: `$${totalValue.toFixed(2)}` },
     { label: 'Processing Date', value: DateTime.now().toISODate() }
   ])
-  
+
   return { ...file, body: JSON.stringify(orders) }
 })
 
@@ -614,18 +615,18 @@ returnSuccess(processedFiles)
 ```javascript
 const processedFiles = sourceFiles.map(file => {
   const data = JSON.parse(file.body)
-  
+
   // Check if data meets processing criteria
   if (data.length === 0) {
     userLog.warning('No data to process')
     return null
   }
-  
+
   if (data.some(record => !record.required_field)) {
     userLog.error('Data missing required fields')
     return null
   }
-  
+
   // Process valid data
   return { ...file, body: JSON.stringify(data) }
 }).filter(file => file !== null) // Remove null entries
@@ -682,22 +683,22 @@ returnSuccess(sourceFiles)
   const results = await executionSearchByPartner('partner-uuid-here', {
     startDateAfter: '2024-01-01T00:00:00Z'
   })
-  
+
   userLog.info(`Found ${results.data.length} previous executions`)
-  
+
   // Process your files normally
   const processedFiles = sourceFiles.map(file => {
     const data = JSON.parse(file.body)
-    
+
     // Use the search results to enrich your data
     data.previousExecutionCount = results.data.length
-    
+
     return {
       ...file,
       body: JSON.stringify(data)
     }
   })
-  
+
   // Don't forget to use "return" before returnSuccess
   return returnSuccess(processedFiles)
 })()
@@ -709,13 +710,13 @@ returnSuccess(sourceFiles)
 (async () => {
   // Search for previous executions
   const results = await executionSearchByPartner('partner-uuid')
-  
+
   // Use conditional logic as normal
   if (results.data.length === 0) {
     userLog.warning('No previous executions found')
     return returnSkipped([])
   }
-  
+
   return returnSuccess(processedFiles)
 })()
 ```
@@ -771,7 +772,7 @@ A: The flow will fail with an error status, and details will appear in the execu
 
 ## Contributing
 
-We welcome contributions from the Chain.io community! 
+We welcome contributions from the Chain.io community!
 
 ### How to Contribute
 
