@@ -2,9 +2,9 @@
 
 ## Overview
 
-The `listExecutionFiles()` and `getExecutionFile()` functions allow you to access files that were produced by previous flow executions. Together with `executionSearchByPartner()`, they give you a complete workflow for finding an execution and retrieving its files:
+The `listExecutionFiles()` and `getExecutionFile()` functions allow you to access files that were produced by previous flow executions. Together with `executionSearchByIntegration()`, they give you a complete workflow for finding an execution and retrieving its files:
 
-1. **`executionSearchByPartner()`** — Find the execution you're interested in
+1. **`executionSearchByIntegration()`** — Find the execution you're interested in
 2. **`listExecutionFiles()`** — Discover what files are available from that execution
 3. **`getExecutionFile()`** — Download a specific file to use in your processor
 
@@ -16,8 +16,8 @@ This is useful for scenarios like:
 ## Function Signatures
 
 ```javascript
-listExecutionFiles(invocationUUID)
-getExecutionFile({ invocation_uuid, time_and_hash })
+listExecutionFiles(invocationId)
+getExecutionFile({ invocationId, fileId })
 ```
 
 Both functions return **Promises**, so you must use the [async wrapper pattern](#using-the-async-wrapper) in your processor.
@@ -30,21 +30,21 @@ Lists all files attached to a specific flow execution.
 
 ### Parameters
 
-#### `invocationUUID` (string, required)
+#### `invocationId` (string, required)
 
 The unique identifier of the flow execution whose files you want to list.
 
 **How to obtain this:**
-- From `executionSearchByPartner()` results: each record in `results.data` has an `invocation_uuid` field
+- From `executionSearchByIntegration()` results: each record in `results.data` has an `invocation_id` field
 - From the Chain.io portal: the execution UUID appears in the execution detail URL
 
 **Example:**
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here')
-  const invocationUUID = results.data[0].invocation_uuid
+  const results = await executionSearchByIntegration('integration-id-here')
+  const invocationId = results.data[0].invocation_id
 
-  const files = await listExecutionFiles(invocationUUID)
+  const files = await listExecutionFiles(invocationId)
   userLog.info(`Found ${files.length} files`)
 
   return returnSuccess(sourceFiles)
@@ -58,15 +58,12 @@ Returns a Promise that resolves to an **array of file metadata objects**. Each o
 ```javascript
 [
   {
-    invocation_uuid: "550e8400-e29b-41d4-a716-446655440000",
+    invocation_id: "550e8400-e29b-41d4-a716-446655440000",
     file_name: "orders.xml",
     created_time: "2024-01-15T10:30:00.000Z",
-    time_and_hash: "2024-01-15T10:30:00.000Z~abc123def456",
+    file_id: "2024-01-15T10:30:00.000Z~abc123def456",
     file_hash: "abc123def456",
-    file_size: 8192,
-    file_tags: [
-      { name: "Source", value: "Partner EDI" }
-    ]
+    file_size: 8192
   },
   // ... more files
 ]
@@ -74,23 +71,22 @@ Returns a Promise that resolves to an **array of file metadata objects**. Each o
 
 ### File Metadata Fields
 
-- **`invocation_uuid`** (string): The execution this file belongs to
+- **`invocation_id`** (string): The execution this file belongs to
 - **`file_name`** (string): The original filename including extension
 - **`created_time`** (string): ISO timestamp when the file was created
-- **`time_and_hash`** (string): Unique identifier for this file — required by `getExecutionFile()`
+- **`file_id`** (string): Unique identifier for this file — required by `getExecutionFile()`
 - **`file_hash`** (string): Content hash of the file
 - **`file_size`** (number): File size in bytes
-- **`file_tags`** (array): Array of `{ name, value }` tag objects associated with this file
 
 ### Rate Limiting
 
 ⚠️ **Maximum 10 calls per execution**
 
-Each call to `listExecutionFiles()` counts against its own independent limit (separate from `executionSearchByPartner()` and `getExecutionFile()` limits).
+Each call to `listExecutionFiles()` counts against its own independent limit (separate from `executionSearchByIntegration()` and `getExecutionFile()` limits).
 
 ---
 
-## `getExecutionFile({ invocation_uuid, time_and_hash })`
+## `getExecutionFile({ invocationId, fileId })`
 
 Downloads a specific file from a flow execution and returns it as a standard file object.
 
@@ -98,23 +94,23 @@ Downloads a specific file from a flow execution and returns it as a standard fil
 
 An object with:
 
-#### `invocation_uuid` (string, required)
+#### `invocationId` (string, required)
 
-The invocation UUID of the execution that produced the file. Obtain this from `listExecutionFiles()` results (the `invocation_uuid` field on each file metadata object).
+The invocation ID of the execution that produced the file. Obtain this from `listExecutionFiles()` results (the `invocation_id` field on each file metadata object).
 
-#### `time_and_hash` (string, required)
+#### `fileId` (string, required)
 
-The unique identifier for the specific file to download. Obtain this from `listExecutionFiles()` results (the `time_and_hash` field on each file metadata object).
+The unique identifier for the specific file to download. Obtain this from `listExecutionFiles()` results (the `file_id` field on each file metadata object).
 
 **Example:**
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here')
-  const files = await listExecutionFiles(results.data[0].invocation_uuid)
+  const results = await executionSearchByIntegration('integration-id-here')
+  const files = await listExecutionFiles(results.data[0].invocation_id)
 
   const fileObject = await getExecutionFile({
-    invocation_uuid: files[0].invocation_uuid,
-    time_and_hash: files[0].time_and_hash
+    invocationId: files[0].invocation_id,
+    fileId: files[0].file_id
   })
 
   userLog.info(`Downloaded: ${fileObject.file_name}`)
@@ -132,7 +128,7 @@ Returns a Promise that resolves to a **file object** matching the standard [File
   type: "file",
   file_name: "orders.xml",
   format: "xml",
-  mime_type: "text/xml",
+  mime_type: "application/xml",
   body: "<root>...</root>"
 }
 ```
@@ -164,7 +160,7 @@ return returnSuccess([fileObject])
 
 ⚠️ **Maximum 10 calls per execution**
 
-Each call to `getExecutionFile()` counts against its own independent limit (separate from `executionSearchByPartner()` and `listExecutionFiles()` limits).
+Each call to `getExecutionFile()` counts against its own independent limit (separate from `executionSearchByIntegration()` and `listExecutionFiles()` limits).
 
 ---
 
@@ -200,7 +196,7 @@ Each of the three execution access functions has its own independent rate limit:
 
 | Function | Limit |
 |---|---|
-| `executionSearchByPartner()` | 10 calls per execution |
+| `executionSearchByIntegration()` | 10 calls per execution |
 | `listExecutionFiles()` | 10 calls per execution |
 | `getExecutionFile()` | 10 calls per execution |
 
@@ -233,7 +229,7 @@ Find a partner's most recent tagged execution and retrieve its newest file:
 ```javascript
 (async () => {
   // Search for executions tagged with a specific batch ID
-  const results = await executionSearchByPartner('partner-uuid-here', {
+  const results = await executionSearchByIntegration('integration-id-here', {
     dataTag: 'DAILY_REPORT'
   })
 
@@ -243,7 +239,7 @@ Find a partner's most recent tagged execution and retrieve its newest file:
   }
 
   // Get files from the most recent execution
-  const files = await listExecutionFiles(results.data[0].invocation_uuid)
+  const files = await listExecutionFiles(results.data[0].invocation_id)
 
   if (!files.length) {
     userLog.warning('No files found for this execution')
@@ -257,8 +253,8 @@ Find a partner's most recent tagged execution and retrieve its newest file:
 
   // Download and return it
   const fileObject = await getExecutionFile({
-    invocation_uuid: newest.invocation_uuid,
-    time_and_hash: newest.time_and_hash
+    invocationId: newest.invocation_id,
+    fileId: newest.file_id
   })
 
   userLog.info(`Downloaded ${fileObject.file_name} (${newest.file_size} bytes)`)
@@ -272,13 +268,13 @@ Find and download a file with a particular name from a previous execution:
 
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here')
+  const results = await executionSearchByIntegration('integration-id-here')
 
   if (!results.data.length) {
     return returnSkipped([])
   }
 
-  const files = await listExecutionFiles(results.data[0].invocation_uuid)
+  const files = await listExecutionFiles(results.data[0].invocation_id)
 
   // Find the file you want by name
   const targetFile = files.find(f => f.file_name === 'manifest.json')
@@ -289,8 +285,8 @@ Find and download a file with a particular name from a previous execution:
   }
 
   const fileObject = await getExecutionFile({
-    invocation_uuid: targetFile.invocation_uuid,
-    time_and_hash: targetFile.time_and_hash
+    invocationId: targetFile.invocation_id,
+    fileId: targetFile.file_id
   })
 
   const manifest = JSON.parse(fileObject.body)
@@ -312,7 +308,7 @@ Download all XML files from a previous execution:
 
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here', {
+  const results = await executionSearchByIntegration('integration-id-here', {
     dataTag: 'BATCH_2024_001'
   })
 
@@ -320,7 +316,7 @@ Download all XML files from a previous execution:
     return returnSkipped([])
   }
 
-  const files = await listExecutionFiles(results.data[0].invocation_uuid)
+  const files = await listExecutionFiles(results.data[0].invocation_id)
 
   // Filter to XML files only
   const xmlFiles = files.filter(f => f.file_name.endsWith('.xml'))
@@ -330,8 +326,8 @@ Download all XML files from a previous execution:
   const downloadedFiles = []
   for (const fileMeta of xmlFiles) {
     const fileObject = await getExecutionFile({
-      invocation_uuid: fileMeta.invocation_uuid,
-      time_and_hash: fileMeta.time_and_hash
+      invocationId: fileMeta.invocation_id,
+      fileId: fileMeta.file_id
     })
     downloadedFiles.push(fileObject)
   }
@@ -347,7 +343,7 @@ Use a previously processed file to validate or enrich the current execution:
 ```javascript
 (async () => {
   // Get the most recent previous execution
-  const results = await executionSearchByPartner('partner-uuid-here', {
+  const results = await executionSearchByIntegration('integration-id-here', {
     startDateBefore: DateTime.now().minus({ hours: 1 }).toISO()
   })
 
@@ -356,7 +352,7 @@ Use a previously processed file to validate or enrich the current execution:
     return returnSuccess(sourceFiles)
   }
 
-  const files = await listExecutionFiles(results.data[0].invocation_uuid)
+  const files = await listExecutionFiles(results.data[0].invocation_id)
   const previousFile = files.find(f => f.file_name.endsWith('.json'))
 
   if (!previousFile) {
@@ -364,8 +360,8 @@ Use a previously processed file to validate or enrich the current execution:
   }
 
   const previousData = await getExecutionFile({
-    invocation_uuid: previousFile.invocation_uuid,
-    time_and_hash: previousFile.time_and_hash
+    invocationId: previousFile.invocation_id,
+    fileId: previousFile.file_id
   })
 
   const previousRecords = JSON.parse(previousData.body)
@@ -406,7 +402,7 @@ Use a previously processed file to validate or enrich the current execution:
 
 **Solution:**
 - Cache results: list files once, then loop through the cached array
-- Use `executionSearchByPartner()` filters to target the specific execution you need
+- Use `executionSearchByIntegration()` filters to target the specific execution you need
 - If downloading many files, ensure you stay within the 10-call limit per function
 
 ### Empty File List
@@ -414,7 +410,7 @@ Use a previously processed file to validate or enrich the current execution:
 **Problem:** `listExecutionFiles()` returns an empty array.
 
 **Solution:**
-- Verify the `invocation_uuid` is correct
+- Verify the `invocationId` is correct
 - Confirm the execution actually produced files by checking the portal
 - Some executions may complete without producing files (e.g., skipped runs)
 
@@ -423,8 +419,8 @@ Use a previously processed file to validate or enrich the current execution:
 **Problem:** `getExecutionFile()` throws an error for a specific file.
 
 **Solution:**
-- Ensure you're using the `time_and_hash` value directly from the `listExecutionFiles()` response without modification
-- Verify the `invocation_uuid` matches the execution that produced the file
+- Ensure you're using the `file_id` value directly from the `listExecutionFiles()` response without modification
+- Verify the `invocationId` matches the execution that produced the file
 - Files from very old executions may no longer be available
 
 ### Timeout
