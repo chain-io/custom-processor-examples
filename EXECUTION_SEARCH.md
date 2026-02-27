@@ -512,16 +512,16 @@ The `executionSearchByPartner()` function provides programmatic access to the sa
 - Basic execution statistics
 
 ❌ **Not available in search results:**
-- Actual file contents processed during execution
+- Actual file contents processed during execution (use `listExecutionFiles()` + `getExecutionFile()` for this)
 - Detailed execution logs
 - Internal processing steps
-- File payloads
 
-The search function gives you **metadata about executions**, not the actual data that was processed. This is perfect for:
+The search function gives you **metadata about executions**. To access the actual files, use `listExecutionFiles()` and `getExecutionFile()` — see [EXECUTION_FILES.md](EXECUTION_FILES.md). The execution search is perfect for:
 - Tracking execution history
 - Detecting patterns
 - Preventing duplicates
 - Building execution statistics
+- Finding the right execution before downloading its files
 
 ## Complete Working Example
 
@@ -639,14 +639,34 @@ Here's a comprehensive example showing multiple features:
 - Verify the `dataTag` value matches exactly (case-sensitive)
 - Check the portal execution screen to confirm executions exist
 
-### Cannot Access File Contents
+### Cannot Access File Contents via executionSearchByPartner
 
-**Problem:** You want to retrieve the actual files from previous executions.
+**Problem:** You want to retrieve the actual files from previous executions, but `executionSearchByPartner()` only returns metadata.
 
-**Solution:** The search function only returns execution **metadata**, not file contents. You cannot access the actual data that was processed in previous executions. Consider:
-- Publishing important data as data tags during execution
-- Storing summary information in the `summary_message`
-- Using external storage if you need to access historical data
+**Solution:** Use `listExecutionFiles()` and `getExecutionFile()` to access the actual files from a previous execution:
+
+```javascript
+(async () => {
+  // 1. Find the execution you want
+  const results = await executionSearchByPartner(partnerUUID, {
+    dataTag: 'MY_BATCH'
+  })
+  const invocation = results.data[0]
+
+  // 2. List the files from that execution
+  const files = await listExecutionFiles(invocation.invocation_uuid)
+
+  // 3. Download a specific file
+  const fileObject = await getExecutionFile({
+    invocation_uuid: files[0].invocation_uuid,
+    time_and_hash: files[0].time_and_hash
+  })
+
+  return returnSuccess([fileObject])
+})()
+```
+
+See [EXECUTION_FILES.md](EXECUTION_FILES.md) for complete documentation on these functions.
 
 ## Best Practices Summary
 
@@ -662,7 +682,9 @@ Here's a comprehensive example showing multiple features:
 ## Related Documentation
 
 - [README.md](README.md) - Main custom processor documentation
+- [EXECUTION_FILES.md](EXECUTION_FILES.md) - Guide for downloading files from previous executions
 - [Example: log_another_flow_with_search.js](example_scripts/log_another_flow_with_search.js) - Working code example
+- [Example: get_newest_file_from_partner_execution.js](example_scripts/get_newest_file_from_partner_execution.js) - End-to-end example combining search and file download
 - [Using Async Operations](README.md#using-async-operations) - Detailed async wrapper guide
 
 ---

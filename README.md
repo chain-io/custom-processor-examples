@@ -9,6 +9,7 @@ This repository contains:
 - **Complete documentation** - Everything you need to get started
 - **Best practices** - Proven patterns from the Chain.io community
 - **[EXECUTION_SEARCH.md](EXECUTION_SEARCH.md)** - Detailed guide for the `executionSearchByPartner()` function
+- **[EXECUTION_FILES.md](EXECUTION_FILES.md)** - Detailed guide for the `listExecutionFiles()` and `getExecutionFile()` functions
 - **[XML_LIBRARY.md](XML_LIBRARY.md)** - XML parsing and manipulation reference
 
 ### Example Files in This Repository
@@ -21,6 +22,7 @@ This repository contains:
 - [`port_of_discharge_to_port_of_destination.js`](example_scripts/port_of_discharge_to_port_of_destination.js) - Port mapping logic
 - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByPartner
 - [`process_x12_997_files.js`](example_scripts/process_x12_997_files.js) - Parse and validate X12 997 EDI acknowledgment files
+- [`get_newest_file_from_partner_execution.js`](example_scripts/get_newest_file_from_partner_execution.js) - Retrieve the newest file from a partner's most recent tagged execution
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -250,6 +252,112 @@ Search for flow execution records by trading partner. This function provides pro
 > 💡 **See also**:
 > - [EXECUTION_SEARCH.md](EXECUTION_SEARCH.md) - Complete documentation with all parameters and examples
 > - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Working code example
+
+#### `listExecutionFiles(invocationUUID)`
+
+List all files attached to a flow execution. Use this to discover what files were produced by a previous execution before downloading them.
+
+**Parameters:**
+- `invocationUUID` (string): The invocation UUID of the flow execution (obtained from `executionSearchByPartner` results)
+
+**Returns:** Promise that resolves to an array of file metadata objects:
+```javascript
+[
+  {
+    invocation_uuid: "inv-uuid-123",
+    file_name: "report.xml",
+    created_time: "2024-01-01T00:00:00.000Z",
+    time_and_hash: "2024-01-01T00:00:00.000Z~abc123",
+    file_hash: "abc123",
+    file_size: 1024,
+    file_tags: [{ name: "Tag", value: "Value" }]
+  }
+]
+```
+
+**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByPartner` and `getExecutionFile` limits)
+
+**Example:**
+```javascript
+(async () => {
+  const results = await executionSearchByPartner('partner-uuid-here')
+  const invocation = results.data[0]
+
+  // List all files from the execution
+  const files = await listExecutionFiles(invocation.invocation_uuid)
+  userLog.info(`Found ${files.length} files`)
+
+  files.forEach(f => {
+    userLog.info(`  ${f.file_name} (${f.file_size} bytes, created ${f.created_time})`)
+  })
+
+  return returnSuccess(sourceFiles)
+})()
+```
+
+**Key Points:**
+- ⚠️ **Requires async wrapper**: Must wrap entire script in `(async () => { ... })()`
+- ⚠️ **Rate limited**: Maximum 10 calls per execution
+- ⚠️ **Returns metadata only**: Use `getExecutionFile()` to download the actual file content
+- 📖 **[Complete Documentation](EXECUTION_FILES.md)**: See detailed guide with all options and examples
+
+#### `getExecutionFile({ invocation_uuid, time_and_hash })`
+
+Download a specific file from a flow execution and return it as a file object ready to use in your processor. Use the `invocation_uuid` and `time_and_hash` values from the `listExecutionFiles` response to identify the file.
+
+**Parameters:** An object with:
+- `invocation_uuid` (string): The invocation UUID of the flow execution
+- `time_and_hash` (string): The file's unique identifier from the `listExecutionFiles` response
+
+**Returns:** Promise that resolves to a file object:
+```javascript
+{
+  uuid: "550e8400-e29b-41d4-a716-446655440000",
+  type: "file",
+  file_name: "report.xml",
+  format: "xml",
+  mime_type: "text/xml",
+  body: "<root>...</root>"   // string for text files, base64 for binary files
+}
+```
+
+The returned file object matches the standard [File Object Structure](#file-object-structure) and can be used directly in `returnSuccess()`, parsed with `JSON.parse()`, processed with `XLSX.read()`, etc.
+
+- **Text files** (JSON, CSV, XML, etc.): `body` is a UTF-8 string
+- **Binary files** (Excel, PDF, etc.): `body` is a base64-encoded string
+
+**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByPartner` and `listExecutionFiles` limits)
+
+**Example — Download and return a file:**
+```javascript
+(async () => {
+  const results = await executionSearchByPartner('partner-uuid-here')
+  const invocation = results.data[0]
+
+  // List files and pick the newest one
+  const files = await listExecutionFiles(invocation.invocation_uuid)
+  const newest = files.reduce((latest, f) =>
+    f.created_time > latest.created_time ? f : latest
+  )
+
+  // Download the file
+  const fileObject = await getExecutionFile({
+    invocation_uuid: newest.invocation_uuid,
+    time_and_hash: newest.time_and_hash
+  })
+
+  userLog.info(`Downloaded ${fileObject.file_name}`)
+  return returnSuccess([fileObject])
+})()
+```
+
+**Key Points:**
+- ⚠️ **Requires async wrapper**: Must wrap entire script in `(async () => { ... })()`
+- ⚠️ **Rate limited**: Maximum 10 calls per execution
+- ⚠️ **Use `listExecutionFiles` first**: You need `time_and_hash` from the file listing to download a specific file
+- 📖 **[Complete Documentation](EXECUTION_FILES.md)**: See detailed guide with all options and examples
+
+> 💡 **See also**: [`get_newest_file_from_partner_execution.js`](example_scripts/get_newest_file_from_partner_execution.js) for a complete working example
 
 ## Common Use Cases with Examples
 
@@ -647,6 +755,8 @@ Custom processors support asynchronous operations, but they require a specific w
 
 You need to use the async wrapper when:
 - Using `executionSearchByPartner()` to search for previous executions
+- Using `listExecutionFiles()` to list files from a previous execution
+- Using `getExecutionFile()` to download a file from a previous execution
 - Using `await` with any Promise-based operation
 - Calling any function that returns a Promise
 
@@ -740,7 +850,7 @@ returnSuccess(sourceFiles)
 - **60-second timeout**: Total execution time (including any async operations) must complete within 60 seconds
 - **10,000 character limit**: Per processor (pre and post can each be 10,000 characters)
 - **No Symbol object access**: Security restriction
-- **Async operations require wrapper**: If using `await` or async functions like `executionSearchByPartner`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
+- **Async operations require wrapper**: If using `await` or async functions like `executionSearchByPartner`, `listExecutionFiles`, or `getExecutionFile`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
 
 ## Getting Help
 
@@ -765,7 +875,7 @@ A: You need to wrap your entire script in the async wrapper: `(async () => { /* 
 A: Process data in chunks and use efficient algorithms. Consider splitting large files before processing.
 
 **Q: Can I save state between executions?**
-A: No, each execution is independent. However, you can use `executionSearchByPartner()` to look up data from previous executions.
+A: No, each execution is independent. However, you can use `executionSearchByPartner()` to look up metadata from previous executions, and `listExecutionFiles()` + `getExecutionFile()` to retrieve the actual files that were processed in those executions.
 
 **Q: What happens if my code has errors?**
 A: The flow will fail with an error status, and details will appear in the execution logs.
