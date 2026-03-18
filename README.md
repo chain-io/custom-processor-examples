@@ -23,6 +23,8 @@ This repository contains:
 - [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByPartner
 - [`process_x12_997_files.js`](example_scripts/process_x12_997_files.js) - Parse and validate X12 997 EDI acknowledgment files
 - [`get_newest_file_from_partner_execution.js`](example_scripts/get_newest_file_from_partner_execution.js) - Retrieve the newest file from a partner's most recent tagged execution
+- [`store_values_in_preprocessor.js`](example_scripts/store_values_in_preprocessor.js) - Store values in execution context for use in postprocessor
+- [`retrieve_values_in_postprocessor.js`](example_scripts/retrieve_values_in_postprocessor.js) - Retrieve values from execution context in postprocessor
 
 ## Table of Contents
 - [Quick Start](#quick-start)
