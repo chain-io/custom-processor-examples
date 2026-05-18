@@ -141,6 +141,33 @@ const results = await executionSearchByIntegration(integrationId, {
 })
 ```
 
+##### `flow_id` (string, optional)
+
+Filter executions to a specific flow within the integration.
+
+**Format:** UUID string (e.g., `"87654321-4321-4321-4321-210987654321"`)
+
+**Portal Equivalent:** This is like selecting a specific flow in the execution search screen when an integration has multiple flows.
+
+**Example:**
+```javascript
+const results = await executionSearchByIntegration(integrationId, {
+  flow_id: '87654321-4321-4321-4321-210987654321'
+})
+```
+
+**Use Cases:**
+- Narrow results when an integration has multiple flows and you only care about one
+- Combine with date filters to find executions for a specific flow in a date range
+
+```javascript
+// Executions for a specific flow in the last 7 days
+const results = await executionSearchByIntegration(integrationId, {
+  flow_id: '87654321-4321-4321-4321-210987654321',
+  startDateAfter: DateTime.now().minus({ days: 7 }).toISO()
+})
+```
+
 ##### `cursor` (string, optional)
 
 Pagination cursor for retrieving additional results when there are more records than fit in a single response.
@@ -494,6 +521,7 @@ The `executionSearchByIntegration()` function provides programmatic access to th
 | Portal Feature | Code Equivalent |
 |----------------|-----------------|
 | Partner dropdown | `integrationId` parameter |
+| Flow dropdown | `flow_id` argument |
 | Date range "From" | `startDateAfter` argument |
 | Date range "To" | `startDateBefore` argument |
 | Data Tags filter | `dataTag` argument |
