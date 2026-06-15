@@ -132,6 +132,17 @@ Your custom processors have access to these powerful tools:
 - `destinationFiles` (post-processors): Array of processed files
 - `userLog`: For logging messages (`userLog.info()`, `userLog.warning()`, `userLog.error()`)
 
+#### Logging Limits
+
+User log output is capped so a single execution can't flood the execution screen:
+
+| Limit | Value |
+|---|---|
+| Per message | **10 KB** — longer messages are truncated and a marker is appended |
+| Total per execution | **100 KB** — once reached, further messages are not recorded |
+
+If you need to log large payloads for debugging, log a summary (counts, IDs, a sample) rather than the entire document.
+
 ### File Object Structure
 
 Every file in Chain.io custom processors is represented as a JavaScript object with the following properties:
@@ -717,8 +728,15 @@ const processedFiles = sourceFiles.map(file => {
 returnSuccess(processedFiles)
 ```
 
-**Note:** Data tag labels and values are automatically truncated to 255 bytes each to ensure compatibility with the Chain.io platform. If your data contains labels or values longer than 255 bytes, they will be truncated when published. (A unicode character is 1-4 bytes. If you need to see how many bytes a particular string is, there are online tools available. Here is an example: [UTF-8 String Length & Byte Counter
-](http://folge.me/tools/utf8-bytes-counter) )
+**Data tag limits:** Data tags are subject to the following limits when published. When a limit is exceeded the data is truncated (or excess tags are dropped) and a message is added to your user log explaining what happened.
+
+| Limit | Value |
+|---|---|
+| Data tag **value** | 255 bytes — longer values are truncated |
+| Data tag **label** | 50 bytes — longer labels are truncated |
+| Data tags **per execution** | 100 — the first 100 are kept; beyond that, additional tags are dropped and a `Truncation` data tag is added noting how many were dropped |
+
+Limits are measured in bytes, and truncation always happens on a character boundary so a multi-byte character is never split. (A unicode character is 1–4 bytes. If you need to see how many bytes a particular string is, there are online tools available — for example: [UTF-8 String Length & Byte Counter](http://folge.me/tools/utf8-bytes-counter).)
 
 ### Conditional Flow Control
 
@@ -851,6 +869,8 @@ returnSuccess(sourceFiles)
 - **No external libraries**: Cannot `require()` or `import` additional packages beyond the built-in libraries listed above
 - **60-second timeout**: Total execution time (including any async operations) must complete within 60 seconds
 - **10,000 character limit**: Per processor (pre and post can each be 10,000 characters)
+- **User log size limits**: Each `userLog` message is limited to **10 KB**, with a total of **100 KB** per processor execution. Messages larger than 10 KB are truncated (with a marker appended); once the 100 KB total is reached, further messages are not recorded. See [Logging Limits](#logging-limits).
+- **Data tag limits**: Data tag values are limited to 255 bytes, labels to 50 bytes, and 100 data tags per execution. See [Publishing Custom Data Tags](#publishing-custom-data-tags).
 - **No Symbol object access**: Security restriction
 - **Async operations require wrapper**: If using `await` or async functions like `executionSearchByPartner`, `listExecutionFiles`, or `getExecutionFile`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
 
