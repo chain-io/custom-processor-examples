@@ -4,6 +4,9 @@
 // Uses: executionSearchByPartner, listExecutionFiles, getExecutionFile
 // Requires the async IIFE wrapper pattern.
 
+; //without this semicolon, javascript will not be able to parse the parentheses below
+//you will get: (intermediate value)(...) is not a function
+
 (async () => {
   // 1. Search for executions with the "EXAMPLETAG" data tag
   const results = await executionSearchByPartner('YOUR-PARTNER-UUID', {
