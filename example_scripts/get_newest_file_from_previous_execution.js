@@ -1,12 +1,12 @@
-// Example: Retrieve the newest file from a partner's most recent execution
+// Example: Retrieve the newest file from an integration's most recent execution
 // tagged with "EXAMPLETAG" and return it as the processor output.
 //
-// Uses: executionSearchByPartner, listExecutionFiles, getExecutionFile
+// Uses: executionSearchByIntegration, listExecutionFiles, getExecutionFile
 // Requires the async IIFE wrapper pattern.
 
 (async () => {
   // 1. Search for executions with the "EXAMPLETAG" data tag
-  const results = await executionSearchByPartner('YOUR-PARTNER-UUID', {
+  const results = await executionSearchByIntegration('YOUR-INTEGRATION-ID', {
     dataTag: 'EXAMPLETAG'
   })
 

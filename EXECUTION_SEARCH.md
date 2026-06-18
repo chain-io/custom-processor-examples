@@ -712,7 +712,7 @@ See [EXECUTION_FILES.md](EXECUTION_FILES.md) for complete documentation on these
 - [README.md](README.md) - Main custom processor documentation
 - [EXECUTION_FILES.md](EXECUTION_FILES.md) - Guide for downloading files from previous executions
 - [Example: log_another_flow_with_search.js](example_scripts/log_another_flow_with_search.js) - Working code example
-- [Example: get_newest_file_from_partner_execution.js](example_scripts/get_newest_file_from_partner_execution.js) - End-to-end example combining search and file download
+- [Example: get_newest_file_from_previous_execution.js](example_scripts/get_newest_file_from_previous_execution.js) - End-to-end example combining search and file download
 - [Using Async Operations](README.md#using-async-operations) - Detailed async wrapper guide
 
 ---
