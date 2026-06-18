@@ -9,7 +9,7 @@ The `listExecutionFiles()` and `getExecutionFile()` functions allow you to acces
 3. **`getExecutionFile()`** — Download a specific file to use in your processor
 
 This is useful for scenarios like:
-- Pulling data from a partner's previous delivery into your current processing
+- Pulling data from an integration's previous delivery into your current processing
 - Comparing current data against a previously processed file
 - Re-processing or forwarding a file from an earlier execution
 
@@ -222,9 +222,9 @@ Multiple downloads add up. Leave enough time for your actual data processing aft
 
 ## Common Use Cases
 
-### 1. Download the Newest File from a Partner
+### 1. Download the Newest File from an Integration
 
-Find a partner's most recent tagged execution and retrieve its newest file:
+Find an integration's most recent tagged execution and retrieve its newest file:
 
 ```javascript
 (async () => {
@@ -450,7 +450,7 @@ Use a previously processed file to validate or enrich the current execution:
 
 - [README.md](README.md) - Main custom processor documentation
 - [EXECUTION_SEARCH.md](EXECUTION_SEARCH.md) - Guide for searching previous executions (prerequisite for getting file UUIDs)
-- [Example: get_newest_file_from_partner_execution.js](example_scripts/get_newest_file_from_partner_execution.js) - Complete end-to-end working example
+- [Example: get_newest_file_from_previous_execution.js](example_scripts/get_newest_file_from_previous_execution.js) - Complete end-to-end working example
 - [Using Async Operations](README.md#using-async-operations) - Detailed async wrapper guide
 
 ---

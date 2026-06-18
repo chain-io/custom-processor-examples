@@ -8,7 +8,7 @@ This repository contains:
 - **Real-world examples** - Production-ready custom processors (see `.js` files in this repo)
 - **Complete documentation** - Everything you need to get started
 - **Best practices** - Proven patterns from the Chain.io community
-- **[EXECUTION_SEARCH.md](EXECUTION_SEARCH.md)** - Detailed guide for the `executionSearchByPartner()` function
+- **[EXECUTION_SEARCH.md](EXECUTION_SEARCH.md)** - Detailed guide for the `executionSearchByIntegration()` function
 - **[EXECUTION_FILES.md](EXECUTION_FILES.md)** - Detailed guide for the `listExecutionFiles()` and `getExecutionFile()` functions
 - **[XML_LIBRARY.md](XML_LIBRARY.md)** - XML parsing and manipulation reference
 
@@ -20,9 +20,9 @@ This repository contains:
 - [`error_edi_810_cancel_files.js`](example_scripts/error_edi_810_cancel_files.js) - Handle EDI cancellation files
 - [`nonstandard_edi_value_replace.js`](example_scripts/nonstandard_edi_value_replace.js) - Replace non-standard EDI values
 - [`port_of_discharge_to_port_of_destination.js`](example_scripts/port_of_discharge_to_port_of_destination.js) - Port mapping logic
-- [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByPartner
+- [`log_another_flow_with_search.js`](example_scripts/log_another_flow_with_search.js) - Search for previous flow executions using executionSearchByIntegration
 - [`process_x12_997_files.js`](example_scripts/process_x12_997_files.js) - Parse and validate X12 997 EDI acknowledgment files
-- [`get_newest_file_from_partner_execution.js`](example_scripts/get_newest_file_from_partner_execution.js) - Retrieve the newest file from a partner's most recent tagged execution
+- [`get_newest_file_from_previous_execution.js`](example_scripts/get_newest_file_from_previous_execution.js) - Retrieve the newest file from an integration's most recent tagged execution
 - [`store_values_in_preprocessor.js`](example_scripts/store_values_in_preprocessor.js) - Store values in execution context for use in postprocessor
 - [`retrieve_values_in_postprocessor.js`](example_scripts/retrieve_values_in_postprocessor.js) - Retrieve values from execution context in postprocessor
 
@@ -225,15 +225,15 @@ const modifiedFile = {
 
 ### Advanced Functions
 
-#### `executionSearchByPartner(partnerUUID, args)`
+#### `executionSearchByIntegration(integrationId, args)`
 
-Search for flow execution records by trading partner. This function provides programmatic access to the same execution data you see in the **Flow Execution Search screen** in the Chain.io portal.
+Search for flow execution records by integration. This function provides programmatic access to the same execution data you see in the **Flow Execution Search screen** in the Chain.io portal.
 
 **Quick Example:**
 ```javascript
 (async () => {
-  // Search for recent executions from a partner
-  const results = await executionSearchByPartner('partner-uuid-here', {
+  // Search for recent executions from an integration
+  const results = await executionSearchByIntegration('integration-id-here', {
     startDateAfter: '2024-01-01T00:00:00Z',
     dataTag: 'ORDER_BATCH_123'
   })
@@ -271,7 +271,7 @@ Search for flow execution records by trading partner. This function provides pro
 List all files attached to a flow execution. Use this to discover what files were produced by a previous execution before downloading them.
 
 **Parameters:**
-- `invocationUUID` (string): The invocation UUID of the flow execution (obtained from `executionSearchByPartner` results)
+- `invocationUUID` (string): The invocation UUID of the flow execution (obtained from `executionSearchByIntegration` results)
 
 **Returns:** Promise that resolves to an array of file metadata objects:
 ```javascript
@@ -288,12 +288,12 @@ List all files attached to a flow execution. Use this to discover what files wer
 ]
 ```
 
-**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByPartner` and `getExecutionFile` limits)
+**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByIntegration` and `getExecutionFile` limits)
 
 **Example:**
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here')
+  const results = await executionSearchByIntegration('integration-id-here')
   const invocation = results.data[0]
 
   // List all files from the execution
@@ -339,12 +339,12 @@ The returned file object matches the standard [File Object Structure](#file-obje
 - **Text files** (JSON, CSV, XML, etc.): `body` is a UTF-8 string
 - **Binary files** (Excel, PDF, etc.): `body` is a base64-encoded string
 
-**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByPartner` and `listExecutionFiles` limits)
+**Rate Limiting:** Maximum 10 calls per execution (independent from `executionSearchByIntegration` and `listExecutionFiles` limits)
 
 **Example — Download and return a file:**
 ```javascript
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid-here')
+  const results = await executionSearchByIntegration('integration-id-here')
   const invocation = results.data[0]
 
   // List files and pick the newest one
@@ -370,7 +370,7 @@ The returned file object matches the standard [File Object Structure](#file-obje
 - ⚠️ **Use `listExecutionFiles` first**: You need `time_and_hash` from the file listing to download a specific file
 - 📖 **[Complete Documentation](EXECUTION_FILES.md)**: See detailed guide with all options and examples
 
-> 💡 **See also**: [`get_newest_file_from_partner_execution.js`](example_scripts/get_newest_file_from_partner_execution.js) for a complete working example
+> 💡 **See also**: [`get_newest_file_from_previous_execution.js`](example_scripts/get_newest_file_from_previous_execution.js) for a complete working example
 
 ## Common Use Cases with Examples
 
@@ -774,7 +774,7 @@ Custom processors support asynchronous operations, but they require a specific w
 ### When You Need Async
 
 You need to use the async wrapper when:
-- Using `executionSearchByPartner()` to search for previous executions
+- Using `executionSearchByIntegration()` to search for previous executions
 - Using `listExecutionFiles()` to list files from a previous execution
 - Using `getExecutionFile()` to download a file from a previous execution
 - Using `await` with any Promise-based operation
@@ -785,7 +785,7 @@ You need to use the async wrapper when:
 **❌ This will NOT work:**
 ```javascript
 // Without async wrapper - will cause errors
-const results = await executionSearchByPartner('partner-uuid')
+const results = await executionSearchByIntegration('integration-id')
 returnSuccess(sourceFiles)
 ```
 
@@ -793,7 +793,7 @@ returnSuccess(sourceFiles)
 ```javascript
 // With async wrapper - correct pattern
 (async () => {
-  const results = await executionSearchByPartner('partner-uuid')
+  const results = await executionSearchByIntegration('integration-id')
   return returnSuccess(sourceFiles)  // Note: use "return"
 })()
 ```
@@ -810,7 +810,7 @@ returnSuccess(sourceFiles)
 ```javascript
 (async () => {
   // You can now use await anywhere in your code
-  const results = await executionSearchByPartner('partner-uuid-here', {
+  const results = await executionSearchByIntegration('integration-id-here', {
     startDateAfter: '2024-01-01T00:00:00Z'
   })
 
@@ -839,7 +839,7 @@ returnSuccess(sourceFiles)
 ```javascript
 (async () => {
   // Search for previous executions
-  const results = await executionSearchByPartner('partner-uuid')
+  const results = await executionSearchByIntegration('integration-id')
 
   // Use conditional logic as normal
   if (results.data.length === 0) {
@@ -872,7 +872,7 @@ returnSuccess(sourceFiles)
 - **User log size limits**: Each `userLog` message is limited to **10 KB**, with a total of **100 KB** per processor execution. Messages larger than 10 KB are truncated (with a marker appended); once the 100 KB total is reached, further messages are not recorded. See [Logging Limits](#logging-limits).
 - **Data tag limits**: Data tag values are limited to 255 bytes, labels to 50 bytes, and 100 data tags per execution. See [Publishing Custom Data Tags](#publishing-custom-data-tags).
 - **No Symbol object access**: Security restriction
-- **Async operations require wrapper**: If using `await` or async functions like `executionSearchByPartner`, `listExecutionFiles`, or `getExecutionFile`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
+- **Async operations require wrapper**: If using `await` or async functions like `executionSearchByIntegration`, `listExecutionFiles`, or `getExecutionFile`, you must wrap your entire script in `(async () => { ... })()` and use `return` statements
 
 ## Getting Help
 
@@ -885,7 +885,7 @@ returnSuccess(sourceFiles)
 ### Common Questions
 
 **Q: Can I call external APIs?**
-A: No, custom processors run in a sandboxed environment without external network access. However, you can use `executionSearchByPartner()` to search for previous execution data within Chain.io.
+A: No, custom processors run in a sandboxed environment without external network access. However, you can use `executionSearchByIntegration()` to search for previous execution data within Chain.io.
 
 **Q: How do I use async/await in my processor?**
 A: Wrap your entire script in `(async () => { ... })()` and use `return` before your `returnSuccess()`, `returnError()`, or `returnSkipped()` calls. See the "Advanced Functions" section above for complete examples.
@@ -897,7 +897,7 @@ A: You need to wrap your entire script in the async wrapper: `(async () => { /* 
 A: Process data in chunks and use efficient algorithms. Consider splitting large files before processing.
 
 **Q: Can I save state between executions?**
-A: No, each execution is independent. However, you can use `executionSearchByPartner()` to look up metadata from previous executions, and `listExecutionFiles()` + `getExecutionFile()` to retrieve the actual files that were processed in those executions.
+A: No, each execution is independent. However, you can use `executionSearchByIntegration()` to look up metadata from previous executions, and `listExecutionFiles()` + `getExecutionFile()` to retrieve the actual files that were processed in those executions.
 
 **Q: What happens if my code has errors?**
 A: The flow will fail with an error status, and details will appear in the execution logs.

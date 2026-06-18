@@ -1,10 +1,10 @@
 (async () => { // when using await you need to wrap the code in an async function
-  // Partner UUID and data tag value to search for (find the partner UUID in the url of the flow after the /tp/)
-  const partnerUUID = '00000000-0000-0000-0000-000000000000'
+  // Integration ID and data tag value to search for (find the integration ID in the url of the flow after the /tp/)
+  const integrationId = '00000000-0000-0000-0000-000000000000'
   const dataTagValue = 'abcdefghijk'
 
   // Search for executions with the specified data tag value
-  const results = await executionSearchByPartner(partnerUUID, {
+  const results = await executionSearchByIntegration(integrationId, {
     dataTag: dataTagValue
   })
 
@@ -12,7 +12,7 @@
     // Log the JSON of the first data response
     userLog.info('First execution search result: ' + JSON.stringify(results.data[0], null, 2))
   } else {
-    userLog.info(`No executions found for partner ${partnerUUID} with data tag value ${dataTagValue}`)
+    userLog.info(`No executions found for integration ${integrationId} with data tag value ${dataTagValue}`)
   }
 
   // Always return the original sourceFiles
